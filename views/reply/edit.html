@@ -1,0 +1,139 @@
+<form class="form-horizontal" role="form" style="width:960px;margin:0 auto">
+  <div class="row-fluid">
+    <span class="span2 control-label">总体评价:</span>
+    <div class="span8 reply_score" >
+      <div class="progress">
+        <span class="scorepic"></span>
+        <div class="bar bar-color" style="width: 0%;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="row-fluid">
+    <label for="food" class="span2 control-label">喜欢的菜:</label>
+    <div class="span8 input_tag" data-name="food">
+      <input name="food" type="text" class="form-control" placeholder="自己写">
+      <div class="alert alert-info" style="display: inline-block;padding: 3px 5px;;display:none">
+        <strong>按回车添加</strong>
+      </div>
+    </div>
+  </div>
+  <div class="row-fluid">
+    <label for="comment" class="span2 control-label">评价:</label>
+    <div class="span8">
+      <textarea id="comment" class="form-textarea form-default" rows="7" placeholder="亲，菜品的口味如何，环境怎么样，服务满意吗？" style="width:100%"></textarea>
+    </div>
+  </div>
+  <div class="row-fluid">
+    <label for="picture" class="span2 control-label">上传图片:</label>
+    <div class="span8 upload_pic">
+      <input name="picture" type="file" style="box-shadow: none">
+    </div>
+  </div>
+  <div class="row-fluid">
+    <label for="score" class="span2 control-label">餐厅特色:</label>
+    <div class="span8 input_tag" data-name="feel">
+      <input name="feel" type="text" class="form-control" placeholder="自己写">
+      <div class="alert alert-info" style="display: inline-block;padding: 3px 5px;display:none">
+        <strong>按回车添加</strong>
+      </div>
+    </div>
+  </div>
+</form>
+<div class="row-fluid">
+  <div class="offset2 span10">
+    <button class="btn btn-success submit">提交点评</button>
+  </div>
+</div>
+<script>
+  $(document).ready(function () {
+    var food="<%=food%>".split(','),
+        feel="<%=feel%>".split(',')
+    for (let i=0,l=food.length;i<l;i++) {
+      if(food[i])$('[name="food"]').before('<span class="tag" data-span='+food[i]+'>'+food[i]+'</sapn>')
+    }
+    for (let i=0,l=feel.length;i<l;i++) {
+      if(feel[i])$('[name="feel"]').before('<span class="tag" data-span='+feel[i]+'>'+feel[i]+'</sapn>')
+    }
+    var model ={
+        food : [],
+        feel : [],
+        picture : [],
+        range : 0,
+        topic_id : "<%=topic_id %>"
+    } 
+
+    //添加标签功能
+    $('.input_tag').on('click',function(e){
+      var target = $(e.target)
+      var item = $(this)
+      var targetName= item.attr("data-name")
+      var value = target.text().trim()
+      target.toggleClass("cur");
+      var index = model[targetName].indexOf(value)
+      if(index>-1){
+        model[targetName].splice(index,1)
+      }else if(value){
+        model[targetName].push(value)
+      }
+      console.log(model[targetName])
+      // data-name
+    })
+    $('.input_tag').find("input").on("focus",function(e){
+        $(this).next().css("display","inline-block")
+    })
+    $('.input_tag').find("input").on("blur",function(e){
+        $(this).next().css("display","none")
+    })
+    $('.input_tag').find("input").on("keypress",function(e){
+      if(e.keyCode == 13){
+        var inp = $(this);
+        inp.next().css("display","none")
+        var value = inp.val().trim()
+        if(value && model[inp[0].name].indexOf(value)==-1){
+          model[inp[0].name].push(value)
+          inp.val("")
+          inp.before('<span class="tag cur" data-span='+value+'>'+value+'</sapn>')
+        }else{
+          inp.siblings("[data-span="+value+"]").toggleClass("cur")
+        }
+      }
+    });
+    //添加标签功能end
+
+    //评分给星功能
+    $(".scorepic").on("mousemove",function(e){
+      model.range = Math.floor(e.offsetX/25+1)
+      $(".bar-color").css("width",model.range*20+"%")
+    })
+    //评分给星功能end
+
+    //上传图片功能
+     $('[type="file"]').on("change",function(e){
+            var target = $(this) 
+            var files = this.files;
+            var reader = new FileReader();
+            reader.readAsDataURL(files[0]);
+            reader.onload = function(e){
+                var mb = (e.total/1024)/1024;
+                if(mb>= 2){
+                    alert('文件大小大于2M');
+                    return;
+                }
+                model.picture.push(encodeURI(this.result))
+                target.after('<img src="'+this.result+'"/>')
+            }
+        })
+      //上传图片功能end
+
+      //提交按钮
+      $(".submit").on('click',function(e){
+          model.comment = $("#comment").val().trim()
+          $.post("/reply/add",model,function(result){
+            alert("评论成功")
+            location.href ='/topic/'+model.topic_id
+          });
+          console.log(model)
+      })
+  });
+</script>
+
